@@ -1,44 +1,48 @@
-from flask import Flask, render_template, request
 import pickle
 import numpy as np
 import nltk
-from nltk.stem import PorterStemmer
 import re
+import streamlit as st
 
-app = Flask(__name__)
+# Load the model and other resources
+model = pickle.load(open('logistic_regression.pkl', 'rb'))
+lb = pickle.load(open('label_encoder.pkl', 'rb'))
+tfidf_vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
 
-model = pickle.load(open('logistic_regression.pkl','rb'))
-lb = pickle.load(open('label_encoder.pkl','rb'))
-tfidf_vectorizer = pickle.load(open('tfidf_vectorizer.pkl','rb'))
-
-nltk.download('stopwords')
+# Download stopwords
+nltk.download('stopwords', quiet=True)
 stopwords = nltk.corpus.stopwords.words('english')
 
+# Function to clean the text
 def clean_txt(text):
-    stemmer = PorterStemmer()
-    text = re.sub("[^a-zA-Z]"," ",text)
+    stemmer = nltk.stem.PorterStemmer()
+    text = re.sub("[^a-zA-Z]", " ", text)
     text = text.lower()
     text = text.split()
     text = [stemmer.stem(word) for word in text if word not in stopwords]
     return " ".join(text)
 
+# Prediction function
 def prediction(input_text):
     cleaned_text = clean_txt(input_text)
     input_vectorized = tfidf_vectorizer.transform([cleaned_text])
     predicted_label = model.predict(input_vectorized)[0]
     predicted_emotion = lb.inverse_transform([predicted_label])[0]
-    label = np.max(model.predict(input_vectorized)[0])
-    return predicted_emotion,label
+    # Assuming 'label' is meant to return the predicted label's confidence or value
+    label = np.max(model.predict_proba(input_vectorized)[0])
+    return predicted_emotion, label
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# Streamlit app layout
+st.title("Text Emotion Recognition")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    input_text = request.form['input_text']
-    predicted_emotion, label = prediction(input_text)
-    return render_template('result.html', predicted_emotion=predicted_emotion, label=label)
+# Text input from the user
+input_text = st.text_area("Enter text here:")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# Predict button
+if st.button("Predict"):
+    if input_text:  # Check if input is not empty
+        predicted_emotion, label = prediction(input_text)
+        st.success(f"Predicted Emotion: {predicted_emotion}")
+        st.write(f"Confidence Score: {label:.2f}")
+    else:
+        st.warning("Please enter some text to analyze.")
