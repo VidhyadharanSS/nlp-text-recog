@@ -1,2 +1,2 @@
-# Emotion_Detection_App
-This app is used to detect the emotions of the person by reading the text.
+Emotion detection from texts - MLOps Project.
+This application recognises emotions from the text.
