@@ -6,7 +6,7 @@ on:
       - main  # Change to your default branch if necessary
   pull_request:
     branches:
-      - main
+      - mai
 
 jobs:
   build:
